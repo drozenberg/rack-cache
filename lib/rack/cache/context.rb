@@ -65,10 +65,12 @@ module Rack::Cache
           if !@env['HTTP_EXPECT'] && !@env['rack-cache.force-pass']
             lookup
           else
+            Rails.logger.info "**CACHE** In #call! method. passing"
             pass
           end
         else
           if @request.options?
+            Rails.logger.info "**CACHE** In #call! method. passing because @request.options: #{@request.options?}"
             pass
           else
             invalidate
@@ -153,6 +155,7 @@ module Rack::Cache
       metastore.invalidate(@request, entitystore)
     rescue => e
       log_error(e)
+      Rails.logger.info "**CACHE** In #invalidate method. passing"
       pass
     else
       record :invalidate
@@ -173,6 +176,7 @@ module Rack::Cache
           entry = metastore.lookup(@request, entitystore)
         rescue => e
           log_error(e)
+          Rails.logger.info "**CACHE** In #lookup method. passing"
           return pass
         end
         if entry
