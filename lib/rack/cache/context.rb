@@ -168,15 +168,17 @@ module Rack::Cache
     # stale, attempt to #validate the entry with the backend using conditional
     # GET. When no matching cache entry is found, trigger #miss processing.
     def lookup
+      Rails.logger.info "**CACHE** entered the lookup method"
       if @request.no_cache? && allow_reload?
         record :reload
         fetch
       else
         begin
+          Rails.logger.info "**CACHE** Attempting metastore lookup with request: #{@request}, entitystore: #{entitystore}"
           entry = metastore.lookup(@request, entitystore)
         rescue => e
           log_error(e)
-          Rails.logger.info "**CACHE** In #lookup method. passing"
+          Rails.logger.info "**CACHE** In #lookup method. passing due to error: #{e}"
           return pass
         end
         if entry
