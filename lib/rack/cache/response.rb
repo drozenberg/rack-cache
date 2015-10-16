@@ -30,6 +30,7 @@ module Rack::Cache
     # Create a Response instance given the response status code, header hash,
     # and body.
     def initialize(status, headers, body)
+      Rails.logger.info("**CACHE** initializing Rack::Cache::Response with status: #{status}, headers: #{headers}, body: #{body}")
       @status = status.to_i
       @headers = Rack::Utils::HeaderHash.new(headers)
       @body = body
@@ -67,6 +68,8 @@ module Rack::Cache
     # header is present.
     def cache_control
       @cache_control ||= CacheControl.new(headers['Cache-Control'])
+      # Rails.logger.info("**CACHE** cache_control: #{@cache_control}")
+      # @cache_control
     end
 
     # Set the Cache-Control header to the values specified by the Hash. See
@@ -100,6 +103,8 @@ module Rack::Cache
     # Responses with neither a freshness lifetime (Expires, max-age) nor cache
     # validator (Last-Modified, ETag) are considered uncacheable.
     def cacheable?
+      Rails.logger.info("**CACHE** entering #cacheable? method. #{p CACHEABLE_RESPONSE_CODES}")
+      Rails.logger.info("**CACHE** #{CACHEABLE_RESPONSE_CODES.include?(status)}, no-store: #{cache_control.no_store?}, private: #{cache_control.private?}, validateable: #{validateable?}, fresh: #{fresh?}")
       return false unless CACHEABLE_RESPONSE_CODES.include?(status)
       return false if cache_control.no_store? || cache_control.private?
       validateable? || fresh?
@@ -114,6 +119,7 @@ module Rack::Cache
     # Mark the response "private", making it ineligible for serving other
     # clients.
     def private=(value)
+      Rails.logger.info("**CACHE** Marking the response private with #{value}")
       value = value ? true : nil
       self.cache_control = cache_control.
         merge('public' => !value, 'private' => value)

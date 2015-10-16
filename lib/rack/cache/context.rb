@@ -139,6 +139,8 @@ module Rack::Cache
 
     # Delegate the request to the backend and create the response.
     def forward
+      # Rails.logger.info("**CACHE** creating response from env: #{@env}")
+      Rails.logger.info("**CACHE** creating response from args: #{backend.call(@env)}")
       Response.new(*backend.call(@env))
     end
 
@@ -174,14 +176,16 @@ module Rack::Cache
         fetch
       else
         begin
-          Rails.logger.info "**CACHE** Attempting metastore lookup with request: #{@request}, entitystore: #{entitystore}"
+          # Rails.logger.info "**CACHE** Attempting metastore lookup with request: #{@request}, entitystore: #{entitystore}"
           entry = metastore.lookup(@request, entitystore)
         rescue => e
           log_error(e)
           Rails.logger.info "**CACHE** In #lookup method. passing due to error: #{e}"
+          Rails.logger.info "**CACHE** backtrace: #{e.backtrace}"
           return pass
         end
         if entry
+          Rails.logger.info "**CACHE** In #lookup method. Entry found: #{entry}, checking freshness."
           if fresh_enough?(entry)
             record :fresh
             entry.headers['Age'] = entry.age.to_s
@@ -191,6 +195,7 @@ module Rack::Cache
             validate(entry)
           end
         else
+          Rails.logger.info "**CACHE** In #lookup method. Entry not found, recording miss. Fetching"
           record :miss
           fetch
         end
@@ -249,6 +254,7 @@ module Rack::Cache
     # conditional / validation requests through to the backend but performs no
     # caching of the response when the backend returns a 304.
     def fetch
+      Rails.logger.info("**CACHE** entered the fetch method")
       # send no head requests because we want content
       convert_head_to_get!
 
@@ -258,6 +264,7 @@ module Rack::Cache
       # request headers are present and the response was not explicitly
       # declared public.
       if private_request? && !response.cache_control.public?
+        Rails.logger.info("**CACHE** marking response as explicitly private")
         response.private = true
       elsif default_ttl > 0 && response.ttl.nil? && !response.cache_control.must_revalidate?
         # assign a default TTL for the cache entry if none was specified in
@@ -266,13 +273,19 @@ module Rack::Cache
         response.ttl = default_ttl
       end
 
-      store(response) if response.cacheable?
+      if response.cacheable?
+        store(response)
+        Rails.logger.info("**CACHE** storing response. #cacheable? returns true")
+      else
+        Rails.logger.info("**CACHE** not storing response. #cacheable returns false")
+      end
 
       response
     end
 
     # Write the response to the cache.
     def store(response)
+      Rails.logger.info("**CACHE** entered the store method with response #{response}")
       strip_ignore_headers(response)
       metastore.store(@request, response, entitystore)
       response.headers['Age'] = response.age.to_s
