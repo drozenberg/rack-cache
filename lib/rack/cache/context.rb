@@ -171,6 +171,7 @@ module Rack::Cache
     # GET. When no matching cache entry is found, trigger #miss processing.
     def lookup
       Rails.logger.info "**CACHE** entered the lookup method"
+      Rails.logger.info "**CACHE** settings: #{self.options}"
       if @request.no_cache? && allow_reload?
         record :reload
         fetch
@@ -205,6 +206,7 @@ module Rack::Cache
     # Validate that the cache entry is fresh. The original request is used
     # as a template for a conditional GET request with the backend.
     def validate(entry)
+      Rails.logger.info("**CACHE** entered #validate method")
       # send no head requests because we want content
       convert_head_to_get!
 
@@ -259,10 +261,14 @@ module Rack::Cache
       convert_head_to_get!
 
       response = forward
-
+      Rails.logger.info("Response headers: #{response.headers}")
+      Rails.logger.info("Deleting cache-control response headers: #{response.headers.delete('cache-control')}")
+      Rails.logger.info("New Response headers: #{response.headers}")
       # Mark the response as explicitly private if any of the private
       # request headers are present and the response was not explicitly
       # declared public.
+      Rails.logger.info("**CACHE** response.cache_control: #{response.cache_control}")
+      Rails.logger.info("**CACHE** private: #{private_request? && !response.cache_control.public?}")
       if private_request? && !response.cache_control.public?
         Rails.logger.info("**CACHE** marking response as explicitly private")
         response.private = true

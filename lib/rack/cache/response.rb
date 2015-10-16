@@ -67,8 +67,8 @@ module Rack::Cache
     # of true. This method always returns a Hash, empty if no Cache-Control
     # header is present.
     def cache_control
+      Rails.logger.info("**CACHE** getting or initializing cache_control: #{headers}")
       @cache_control ||= CacheControl.new(headers['Cache-Control'])
-      # Rails.logger.info("**CACHE** cache_control: #{@cache_control}")
       # @cache_control
     end
 
@@ -104,6 +104,7 @@ module Rack::Cache
     # validator (Last-Modified, ETag) are considered uncacheable.
     def cacheable?
       Rails.logger.info("**CACHE** entering #cacheable? method. #{p CACHEABLE_RESPONSE_CODES}")
+      Rails.logger.info("Cache control: #{cache_control}")
       Rails.logger.info("**CACHE** #{CACHEABLE_RESPONSE_CODES.include?(status)}, no-store: #{cache_control.no_store?}, private: #{cache_control.private?}, validateable: #{validateable?}, fresh: #{fresh?}")
       return false unless CACHEABLE_RESPONSE_CODES.include?(status)
       return false if cache_control.no_store? || cache_control.private?

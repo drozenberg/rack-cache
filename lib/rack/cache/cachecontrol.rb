@@ -5,6 +5,7 @@ module Rack
     # Directives that do not have values are set to +true+.
     class CacheControl < Hash
       def initialize(value=nil)
+        Rails.logger.info("Initializing Rack::Cache::CacheControl with #{value}")
         parse(value)
       end
 
@@ -30,6 +31,7 @@ module Rack
       # response may be cached, and cannot ensure the privacy of the
       # message content.
       def private?
+        Rails.logger.info("Cache Control: #{self}}")
         self['private']
       end
 
